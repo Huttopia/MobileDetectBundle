@@ -11,6 +11,7 @@
 
 namespace SunCat\MobileDetectBundle\Twig\Extension;
 
+use Detection\MobileDetect;
 use SunCat\MobileDetectBundle\DeviceDetector\MobileDetector;
 use SunCat\MobileDetectBundle\Helper\DeviceView;
 use Symfony\Component\HttpFoundation\Request;
@@ -94,7 +95,7 @@ class MobileDetectExtension extends AbstractExtension
      *
      * @return string|float The version of the property we are trying to extract.
      */
-    public function deviceVersion($propertyName, $type = \Mobile_Detect::VERSION_TYPE_STRING)
+    public function deviceVersion($propertyName, $type = MobileDetect::VERSION_TYPE_STRING)
     {
         return $this->mobileDetector->version($propertyName, $type);
     }
@@ -134,7 +135,7 @@ class MobileDetectExtension extends AbstractExtension
         // if fullHost ends with /, skip it since getPathInfo() also starts with /
         $result = rtrim($fullHost, '/').$this->request->getPathInfo();
 
-        $query = Request::normalizeQueryString(http_build_query($this->request->query->all(), null, '&'));
+        $query = Request::normalizeQueryString(http_build_query($this->request->query->all(), '', '&'));
         if ($query) {
             $result .= '?'.$query;
         }
@@ -241,7 +242,7 @@ class MobileDetectExtension extends AbstractExtension
      *
      * @param RequestStack $requestStack
      */
-    public function setRequestByRequestStack(RequestStack $requestStack = null)
+    public function setRequestByRequestStack(?RequestStack $requestStack = null)
     {
         if (null !== $requestStack) {
             $this->request = $requestStack->getMainRequest();

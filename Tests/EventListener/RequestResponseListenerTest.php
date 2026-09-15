@@ -8,9 +8,10 @@ use SunCat\MobileDetectBundle\EventListener\RequestResponseListener;
 use SunCat\MobileDetectBundle\Helper\DeviceView;
 use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
@@ -55,23 +56,25 @@ class RequestResponseListenerTest extends TestCase
     /**
      * Set up
      */
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
         $this->mobileDetector = $this->getMockBuilder('SunCat\MobileDetectBundle\DeviceDetector\MobileDetector')->disableOriginalConstructor()->getMock();
         $this->deviceView = $this->getMockBuilder('SunCat\MobileDetectBundle\Helper\DeviceView')->disableOriginalConstructor()->getMock();
-        $this->router = $this->getMockBuilder('Symfony\Bundle\FrameworkBundle\Routing\Router')
+        $this->router = $this->getMockBuilder('Symfony\Component\Routing\RouterInterface')
             ->disableOriginalConstructor()
-            ->setMethods(array('getRouteCollection'))
             ->getMock();
 
         $this->request = $this->getMockBuilder('Symfony\Component\HttpFoundation\Request')->getMock();
         $this->request->expects($this->any())->method('getScheme')->will($this->returnValue('http'));
         $this->request->expects($this->any())->method('getHost')->will($this->returnValue('testhost.com'));
         $this->request->expects($this->any())->method('getUriForPath')->will($this->returnValue('/'));
-        $this->request->query = new ParameterBag();
-        $this->request->cookies = new ParameterBag();
+        $this->request->query = new InputBag();
+        $this->request->cookies = new InputBag();
+        // Holds _route once the RouterListener has matched; the listener reads it
+        // through $request->attributes since Request::get() is deprecated.
+        $this->request->attributes = new ParameterBag();
 
         $this->requestStack = $this->getMockBuilder('Symfony\Component\HttpFoundation\RequestStack')->disableOriginalConstructor()->getMock();
         $this->requestStack->expects($this->any())
@@ -91,7 +94,7 @@ class RequestResponseListenerTest extends TestCase
      */
     public function handleRequestHasSwitchParam()
     {
-        $this->request->query = new ParameterBag(array('myparam'=>'myvalue',$this->switchParam => DeviceView::VIEW_MOBILE));
+        $this->request->query = new InputBag(array('myparam'=>'myvalue',$this->switchParam => DeviceView::VIEW_MOBILE));
         $deviceView = new DeviceView($this->requestStack);
         $deviceView->setRedirectConfig([DeviceView::VIEW_MOBILE => ['status_code' => 302]]);
         $listener = new RequestResponseListener($this->mobileDetector, $deviceView, $this->router, array());
@@ -122,7 +125,7 @@ class RequestResponseListenerTest extends TestCase
     {
         $this->config['mobile'] = array('is_enabled' => true, 'host' => 'http://mobilehost.com');
 
-        $this->request->query = new ParameterBag(array('myparam'=>'myvalue',$this->switchParam => DeviceView::VIEW_MOBILE));
+        $this->request->query = new InputBag(array('myparam'=>'myvalue',$this->switchParam => DeviceView::VIEW_MOBILE));
         $this->request->expects($this->any())->method('getPathInfo')->will($this->returnValue('/'));
         $this->router->expects($this->exactly(2))->method('getRouteCollection')->will(
             $this->returnValue(
@@ -235,7 +238,7 @@ class RequestResponseListenerTest extends TestCase
     {
         $this->config['tablet'] = array('is_enabled' => true, 'host' => 'http://testsite.com', 'status_code' => 302);
 
-        $this->request->query = new ParameterBag(array('some'=>'param'));
+        $this->request->query = new InputBag(array('some'=>'param'));
         $this->request->expects($this->any())->method('getPathInfo')->will($this->returnValue('/some/parameters'));
         $this->router->expects($this->exactly(2))->method('getRouteCollection')->will(
             $this->returnValue(
@@ -285,7 +288,7 @@ class RequestResponseListenerTest extends TestCase
         $switchParam = 'custom_param';
 
 
-        $this->request->query = new ParameterBag(array('some'=>'param'));
+        $this->request->query = new InputBag(array('some'=>'param'));
         $this->request->expects($this->any())->method('getPathInfo')->will($this->returnValue('/some/parameters'));
         $this->router->expects($this->exactly(2))->method('getRouteCollection')->will(
             $this->returnValue(
@@ -696,14 +699,14 @@ class RequestResponseListenerTest extends TestCase
      * @param string $method  Method
      * @param array  $headers Headers
      *
-     * @return \Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent
+     * @return \Symfony\Component\HttpKernel\Event\ViewEvent
      */
     private function createGetResponseEvent($content, $method = 'GET', $headers = array())
     {
-        $event = new GetResponseForControllerResultEvent(
+        $event = new ViewEvent(
             $this->createMock('Symfony\Component\HttpKernel\HttpKernelInterface'),
             $this->request,
-            HttpKernelInterface::MASTER_REQUEST,
+            HttpKernelInterface::MAIN_REQUEST,
             $content
         );
         $event->getRequest()->headers = new HeaderBag($headers);
@@ -718,14 +721,14 @@ class RequestResponseListenerTest extends TestCase
      * @param string $method   Method
      * @param array  $headers  Headers
      *
-     * @return \Symfony\Component\HttpKernel\Event\FilterResponseEvent
+     * @return \Symfony\Component\HttpKernel\Event\ResponseEvent
      */
     private function createFilterResponseEvent($response, $method = 'GET', $headers = array())
     {
-        $event = new FilterResponseEvent(
+        $event = new ResponseEvent(
             $this->createMock('Symfony\Component\HttpKernel\HttpKernelInterface'),
             $this->request,
-            HttpKernelInterface::MASTER_REQUEST,
+            HttpKernelInterface::MAIN_REQUEST,
             $response
         );
         $event->getRequest()->headers = new HeaderBag($headers);

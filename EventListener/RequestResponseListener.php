@@ -48,6 +48,11 @@ class RequestResponseListener
     protected $deviceView;
 
     /**
+     * @var RouterInterface
+     */
+    protected RouterInterface $router;
+
+    /**
      * @var array
      */
     protected $redirectConf;
@@ -103,12 +108,12 @@ class RequestResponseListener
     {
         // only handle master request, do not handle sub request like esi includes
         // If the device view is "not the mobile view" (e.g. we're not in the request context)
-        if ($event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST || $this->deviceView->isNotMobileView()) {
+        if ($event->getRequestType() !== HttpKernelInterface::MAIN_REQUEST || $this->deviceView->isNotMobileView()) {
             return;
         }
 
         $request = $event->getRequest();
-        $this->mobileDetector->setUserAgent($request->headers->get('user-agent'));
+        $this->mobileDetector->setUserAgent((string) $request->headers->get('user-agent'));
 
         // Sets the flag for the response handled by the GET switch param and the type of the view.
         if ($this->deviceView->hasSwitchParam()) {
@@ -189,9 +194,13 @@ class RequestResponseListener
      */
     protected function mustRedirect(Request $request, $view)
     {
+        // The view type is null until it has been resolved from the switch param,
+        // the cookie or the detection; null is no longer a usable array offset.
+        $view = (string) $view;
+
         if (!isset($this->redirectConf[$view]) ||
             !$this->redirectConf[$view]['is_enabled'] ||
-            ($this->getRoutingOption($request->get('_route'), $view) === self::NO_REDIRECT)
+            ($this->getRoutingOption($request->attributes->get('_route'), $view) === self::NO_REDIRECT)
         ) {
             return false;
         }
@@ -240,7 +249,7 @@ class RequestResponseListener
                     unset($queryParams[$this->deviceView->getSwitchParam()]);
                 }
                 if (sizeof($queryParams) > 0) {
-                    $redirectUrl .= '?'.Request::normalizeQueryString(http_build_query($queryParams, null, '&'));
+                    $redirectUrl .= '?'.Request::normalizeQueryString(http_build_query($queryParams, '', '&'));
                 }
             } else {
                 $redirectUrl = $this->getCurrentHost($request);
@@ -281,7 +290,7 @@ class RequestResponseListener
      */
     protected function getRedirectUrl(Request $request, $platform)
     {
-        if (($routingOption = $this->getRoutingOption($request->get('_route'), $platform))) {
+        if (($routingOption = $this->getRoutingOption($request->attributes->get('_route'), $platform))) {
             if (self::REDIRECT === $routingOption) {
                 // Make sure to hint at the device override, otherwise infinite loop
                 // redirection may occur if different device views are hosted on
@@ -289,7 +298,7 @@ class RequestResponseListener
                 $queryParams = $request->query->all();
                 $queryParams[$this->deviceView->getSwitchParam()] = $platform;
 
-                return rtrim($this->redirectConf[$platform]['host'], '/').$request->getPathInfo().'?'.Request::normalizeQueryString(http_build_query($queryParams, null, '&'));
+                return rtrim($this->redirectConf[$platform]['host'], '/').$request->getPathInfo().'?'.Request::normalizeQueryString(http_build_query($queryParams, '', '&'));
             } elseif (self::REDIRECT_WITHOUT_PATH === $routingOption) {
                 // Make sure to hint at the device override, otherwise infinite loop
                 // redirections may occur if different device views are hosted on
@@ -306,22 +315,27 @@ class RequestResponseListener
     /**
      * Gets named option from current route.
      *
-     * @param string $routeName
-     * @param string $optionName
+     * @param string|null $routeName
+     * @param string      $optionName
      *
      * @return string|null
      */
     protected function getRoutingOption($routeName, $optionName)
     {
         $option = null;
-        $route = $this->router->getRouteCollection()->get($routeName);
+        // The route name is null when the request has not been matched against
+        // the routing yet; RouteCollection::get() only accepts a string and used
+        // to receive null as an empty offset.
+        $route = $this->router->getRouteCollection()->get((string) $routeName);
 
         if ($route instanceof Route) {
             $option = $route->getOption($optionName);
         }
 
         if (!$option && isset($this->redirectConf[$optionName])) {
-            $option = $this->redirectConf[$optionName]['action'];
+            // The DI configuration always provides an 'action', but the listener
+            // can also be built from a hand-made array.
+            $option = $this->redirectConf[$optionName]['action'] ?? null;
         }
 
         if (in_array($option, array(self::REDIRECT, self::REDIRECT_WITHOUT_PATH, self::NO_REDIRECT))) {

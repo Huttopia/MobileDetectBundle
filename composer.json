@@ -20,20 +20,30 @@
         }
     ],
     "require": {
-        "php": ">=5.5.9",
-        "symfony/framework-bundle": "~2.7|~3.3|~4.0|~5.0|~6.0",
-        "mobiledetect/mobiledetectlib": "~2.8",
-        "twig/twig": "~1.26|~2.0||^3.0"
+        "php": ">=8.1",
+        "symfony/config": "^6.4|^7.0",
+        "symfony/dependency-injection": "^6.4|^7.0",
+        "symfony/http-foundation": "^6.4|^7.0",
+        "symfony/http-kernel": "^6.4|^7.0",
+        "symfony/routing": "^6.4|^7.0",
+        "mobiledetect/mobiledetectlib": "^4.11",
+        "twig/twig": "^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.8.35|^5.4.3|^6.0",
-        "symfony/phpunit-bridge": "~2.7|~3.3|~4.0|~5.0|~6.0",
-        "satooshi/php-coveralls": "^2.0.0"
+        "phpunit/phpunit": "^9.6",
+        "symfony/phpunit-bridge": "^6.4|^7.0"
     },
     "autoload": {
-        "psr-0": {
-            "SunCat\\MobileDetectBundle": ""
-        }
+        "psr-4": {
+            "SunCat\\MobileDetectBundle\\": ""
+        },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
     },
-    "target-dir": "SunCat/MobileDetectBundle"
+    "autoload-dev": {
+        "psr-4": {
+            "SunCat\\MobileDetectBundle\\Tests\\": "Tests/"
+        }
+    }
 }
