@@ -25,10 +25,10 @@ class RedirectResponseWithCookie extends RedirectResponse
     * Creates a redirect response so that it conforms to the rules defined for a redirect status code.
     *
     * @param string  $url    The URL to redirect to
-    * @param integer $status The status code (302 by default)
+    * @param integer $status The status code
     * @param Cookie  $cookie An array of Cookie objects
     */
-    public function __construct($url, $status = 302, Cookie $cookie)
+    public function __construct($url, $status, Cookie $cookie)
     {
         parent::__construct($url, $status);
 

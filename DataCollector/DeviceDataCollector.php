@@ -58,7 +58,7 @@ class DeviceDataCollector extends DataCollector
         Request $request,
         Response $response,
         ?\Throwable $exception = null
-    ) {
+    ): void {
         $this->data['currentView'] = $this->deviceView->getViewType();
         $this->data['views'] = array(
             array(
@@ -187,14 +187,14 @@ class DeviceDataCollector extends DataCollector
         $requestSwitchView->server->set(
             'QUERY_STRING',
             Request::normalizeQueryString(
-                http_build_query($requestSwitchView->query->all(), null, '&')
+                http_build_query($requestSwitchView->query->all(), '', '&')
             )
         );
 
         return $requestSwitchView->getUri();
     }
 
-    public function reset()
+    public function reset(): void
     {
         $this->data = [];
     }

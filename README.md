@@ -17,6 +17,10 @@ This Bundle use [Mobile_Detect](https://github.com/serbanghita/Mobile-Detect) cl
 * Redirects to mobile and tablet sites
 
 
+## Development (Huttopia fork)
+
+This fork ships a Docker Compose based PHP 8.5 environment. See [DEVELOPMENT.md](DEVELOPMENT.md).
+
 ## Documentation
 
 The bulk of the documentation is stored in the `Resources/doc/index.md` file in this bundle:

@@ -1,0 +1,6 @@
+.git/
+vendor/
+build/
+.idea/
+.vscode/
+.phpunit.result.cache

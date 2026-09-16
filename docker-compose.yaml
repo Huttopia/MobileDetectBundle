@@ -1,0 +1,24 @@
+services:
+  php-cli:
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    # Runs as the host developer so vendor/ and the caches are not owned by root.
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /app
+    volumes:
+      - .:/app
+      # Named volume: keeps the Composer cache across `run --rm` invocations.
+      - composer-cache:/composer
+    environment:
+      # Deprecations must be counted and displayed, never turned into failures:
+      # `max[total]=0` alone would make the run red, `/baselineIgnore` would hide
+      # them. See README for how to read the report.
+      SYMFONY_DEPRECATIONS_HELPER: ${SYMFONY_DEPRECATIONS_HELPER:-max[total]=999999&verbose=1}
+    tty: true
+    stdin_open: true
+
+volumes:
+  composer-cache:

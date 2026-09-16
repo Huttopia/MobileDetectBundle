@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<phpunit backupGlobals="false"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         backupGlobals="false"
          backupStaticAttributes="false"
          colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
          processIsolation="false"
          stopOnFailure="false"
          stopOnError="false"
          stopOnIncomplete="false"
          stopOnSkipped="false"
-         syntaxCheck="false"
+         convertDeprecationsToExceptions="false"
          bootstrap="Tests/bootstrap.php"
     >
     <testsuites>
@@ -19,15 +18,20 @@
             <directory>Tests</directory>
         </testsuite>
     </testsuites>
-    <filter>
-        <whitelist>
+
+    <coverage>
+        <include>
             <directory suffix=".php">./</directory>
-            <exclude>
-                <directory>./Resources</directory>
-                <directory>./Tests</directory>
-                <directory>./vendor</directory>
-                <file>./Tests/bootstrap.php</file>
-            </exclude>
-        </whitelist>
-    </filter>
+        </include>
+        <exclude>
+            <directory>./Resources</directory>
+            <directory>./Tests</directory>
+            <directory>./vendor</directory>
+            <file>./Tests/bootstrap.php</file>
+        </exclude>
+    </coverage>
+
+    <listeners>
+        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener"/>
+    </listeners>
 </phpunit>
